@@ -124,9 +124,5 @@ def inference(input):
 
         layer15_result = tf.matmul(layer14_relu, layer15_weight) + layer15_biases
 
-    result = tf.reshape(layer15_result, [20, 20, 25])
-
-    tf.image.non_max_suppression
-
-
+    result = tf.reshape(layer15_result, [400 * BATCH_SIZE, 25])
 

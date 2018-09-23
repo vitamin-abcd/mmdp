@@ -52,11 +52,11 @@ def get_next_batch(dataset):
     # 测试代码
     with tf.Session() as sess:
         name, label, image = sess.run([data['image_name'], annotation, image_raw])
-        image_entity = PIL.Image.fromarray(image.reshape((500,500,3)), 'RGB')
+        image_entity = PIL.Image.fromarray(image.reshape((500, 500, 3)), 'RGB')
         image_entity.show()
 
-        label = label.reshape((20,20,25))
-        print name,image.shape,label.shape
+        label = label.reshape((20, 20, 25))
+        print name, image.shape, label.shape
 
 
 def record_use_tfrecord(output_dir):
@@ -161,6 +161,10 @@ def read_file(pic_id, filter_diffcult=True):
         xmax = xmax + delta_width / 2
         ymin = ymin + delta_height / 2
         ymax = ymax + delta_height / 2
+        target.xmax = xmax / TAGET_SIZE
+        target.ymax = ymax / TAGET_SIZE
+        target.xmin = xmin / TAGET_SIZE
+        target.ymin = ymin / TAGET_SIZE
 
         # 计算中心点 归一化到 0-1区间内
         center_x = (xmin + xmax) / 2
@@ -185,7 +189,7 @@ def read_file(pic_id, filter_diffcult=True):
     while True:
         if tuple_size * y_cursor >= TAGET_SIZE:
             break
-        line_tensot = []
+        line_tensor = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
         while True:
             if tuple_size * x_cursor >= TAGET_SIZE:
                 x_cursor = 0.0
@@ -199,27 +203,28 @@ def read_file(pic_id, filter_diffcult=True):
                     zero = numpy.zeros((20), dtype=numpy.float32)
                     zero[target.classfication] = 1
                     # 把中心点归一化到该tuple的对应位置
-                    delta_x = target.centerx - tuple_size * x_cursor
-                    delta_y = target.centery - tuple_size * y_cursor
-                    normalize_x = delta_x / tuple_size
-                    normalize_y = delta_y / tuple_size
+                    # delta_x = target.centerx - tuple_size * x_cursor
+                    # delta_y = target.centery - tuple_size * y_cursor
+                    # normalize_x = delta_x / tuple_size
+                    # normalize_y = delta_y / tuple_size
 
                     # 将 pc,normalize_x/y, borderx/y,one-hot 拼接成向量
-                    now_tuple = [1.0, normalize_x, normalize_y, target.borderx, target.bordery]
+                    now_tuple = [1.0, target.ymin, target.xmin, target.ymax, target.xmax]
                     for z in zero:
                         now_tuple.append(z)
-                    line_tensot.append(now_tuple)
+                    line_tensor[int(x_cursor)] = now_tuple
+                    break
                 else:
-                    line_tensot.append(tuple_list.tolist())
+                    line_tensor[int(x_cursor)] = tuple_list.tolist()
 
             x_cursor = x_cursor + 1
 
-        tensor.append(line_tensot)
+        tensor.append(line_tensor)
         y_cursor = y_cursor + 1
     tensor_arr = numpy.array(tensor)
     result.annotation = tensor_arr
 
-    print tensor_arr.shape
+    print file_name, tensor_arr.shape
 
     return result
 
@@ -320,6 +325,6 @@ def _tfrecord_float(value):
 
 
 if __name__ == '__main__':
-    # read_file('2007_000187.xml')
-    # record_use_tfrecord(os.path.join(TRAIN_BASE_DIR, 'tfrecord/train.tfrecords'))
-    get_next_batch(read_tfrecord(os.path.join(TRAIN_BASE_DIR, 'tfrecord/train.tfrecords')))
+    # read_file('2007_000793.xml')
+    record_use_tfrecord(os.path.join(TRAIN_BASE_DIR, 'tfrecord/train.tfrecords'))
+    # get_next_batch(read_tfrecord(os.path.join(TRAIN_BASE_DIR, 'tfrecord/train.tfrecords')))
