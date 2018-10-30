@@ -9,7 +9,7 @@ import pickle
 
 
 class VocData():
-    def __init__(self):
+    def __init__(self, cache):
         self.train_pic_list_file = os.path.join(cfg.dataset_dir, 'ImageSets', 'Main', 'train.txt')
         self.image_size = cfg.image_size
         self.cell_num = cfg.cell_num
@@ -17,6 +17,8 @@ class VocData():
         self.cache_dir = cfg.cache_dir
         self.batch_size = cfg.batch_size
         self.epoch = 0
+        self.cache = cache
+        self.cursor = 0
         self.bootstrap()
 
     def bootstrap(self):
@@ -25,22 +27,23 @@ class VocData():
         :return:
         """
 
-        # Get picture name of training set
-        with open(self.train_pic_list_file) as f:
-            self.image_list = [x.strip() for x in f.readlines()]
-
         labels = []
-        for image_name in self.image_list:
-            label = self.get_label(image_name)
-            image = self.image_read(image_name)
-            labels.append({'name': image_name, 'label': label, 'image': image})
-
         cache_file = os.path.join(
             self.cache_dir, 'pascal_train_data.pkl')
+        if self.cache and not os.path.exists(cache_file):
+            # Get picture name of training set
+            with open(self.train_pic_list_file) as f:
+                self.image_list = [x.strip() for x in f.readlines()]
 
-        # Store label , image data to cache
-        with open(cache_file, 'wb') as f:
-            pickle.dump(labels, f)
+            for image_name in self.image_list:
+                label = self.get_label(image_name)
+                labels.append({'name': image_name, 'label': label})
+            # Store label , image data to cache
+            with open(cache_file, 'wb') as f:
+                pickle.dump(labels, f)
+        elif os.path.exists(cache_file):
+            with open(cache_file, 'rb') as f:
+                labels = pickle.load(f)
 
         np.random.shuffle(labels)
         self.labels = labels
@@ -57,7 +60,7 @@ class VocData():
             (self.batch_size, self.cell_num, self.cell_num, 25))
         count = 0
         while count < self.batch_size:
-            images[count, :, :, :] = self.labels[self.cursor]['image']
+            images[count, :, :, :] = self.image_read(self.labels[self.cursor]['name'])
             labels[count, :, :, :] = self.labels[self.cursor]['label']
             count += 1
             self.cursor += 1
@@ -96,7 +99,7 @@ class VocData():
 
             # Calculate the center point of x-dim , the center point of y-dim , width , height
             boxes = [(x_max + x_min) / 2.0, (y_max + y_min) / 2.0, x_max - x_min, y_max - y_min]
-            # Calculate the target object belong to which grid cell
+            # Calculate the target object is belong to which grid cell
             x_ind = int(boxes[0] * self.cell_num / self.image_size)
             y_ind = int(boxes[1] * self.cell_num / self.image_size)
             if label[y_ind, x_ind, 0] == 1:

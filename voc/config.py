@@ -4,10 +4,10 @@
 dataset_dir = '/Users/tomwang/Downloads/deep_learning/VOC/train/VOCdevkit/VOC2012'
 
 # The cache file to cache the middle data of the data-set
-cache_dir = ''
+cache_dir = '/Users/tomwang/Downloads/deep_learning/VOC/train/'
 
 # mini_batch size
-batch_size = 128
+batch_size = 32
 
 # image_size
 image_size = 448
